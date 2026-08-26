@@ -39,7 +39,7 @@ docker compose run --rm app vendor/bin/phpunit
 docker compose run --rm app vendor/bin/phpstan analyse
 ```
 
-Both also run in CI (GitHub Actions) on every push.
+Both also run in CI (GitHub Actions) on every push to `main` and on every pull request.
 
 ## Configuration
 
@@ -88,9 +88,12 @@ JSON.
 - **`FileProductRequestCounter`**: the read-modify-write cycle holds an exclusive
   `flock`, so concurrent requests cannot lose increments; ids are urlencoded so
   delimiter characters cannot corrupt the format. Rewriting the whole file is O(n) —
-  consciously accepted as the "plain text is enough for now" stage.
-- **Failures of the cache or the counter are logged and never break the customer
-  response** — losing a marketing metric is cheaper than losing a pageview.
+  consciously accepted as the "plain text is enough for now" stage, and so is the
+  fact that the exclusive lock serializes all requests across all products. A process
+  killed between truncate and write can still empty the file. All three limits
+  disappear with the Redis/SQL counter below.
+- **Failures of the cache (reads and writes) or the counter are logged and never
+  break the customer response** — losing a marketing metric is cheaper than losing a pageview.
 - **Product data are passed through as `array<string, mixed>`**: the assignment does
   not define the product structure and the service never inspects it. With a known
   schema I would introduce a `Product` value object at the adapter boundary.
