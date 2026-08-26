@@ -19,5 +19,23 @@ services:
     App\:
         resource: '../src/'
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    # stand-ins for the real drivers, which live in the company framework
+    App\Product\Driver\IElasticSearchDriver: '@App\Product\Driver\InMemoryElasticSearchDriver'
+    App\Product\Driver\IMySQLDriver: '@App\Product\Driver\InMemoryMySQLDriver'
+
+    # PRODUCT_SOURCE (elasticsearch|mysql) selects the data source
+    App\Product\Repository\ProductRepository:
+        factory: ['@App\Product\Repository\ProductRepositoryFactory', 'create']
+        arguments: ['%env(PRODUCT_SOURCE)%']
+
+    App\Product\Cache\ProductCache: '@App\Product\Cache\FileProductCache'
+
+    App\Product\Cache\FileProductCache:
+        arguments:
+            $directory: '%kernel.project_dir%/%env(PRODUCT_CACHE_DIR)%'
+
+    App\Product\Counter\ProductRequestCounter: '@App\Product\Counter\FileProductRequestCounter'
+
+    App\Product\Counter\FileProductRequestCounter:
+        arguments:
+            $filePath: '%kernel.project_dir%/%env(PRODUCT_COUNTER_FILE)%'
